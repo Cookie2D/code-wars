@@ -24,13 +24,29 @@ function isPeter(person) {
   return person.name === "Peter";
 }
 
+function naturalCompare(value1, value2) {
+  if (value1 < value2) {
+    return -1;
+  } else if (value1 > value2) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+function professionCount(group) {
+  console.log("enteredGROUP", group);
+  return [group[0], group[1].length];
+}
+
 function query() {
   const actions = {};
 
   actions.filterCallbackStack = [];
   actions.selectCallback = undefined;
-  actions.result = undefined;
+  actions.orderByCallback = undefined;
   actions.groupByCallback = undefined;
+  actions.result = undefined;
 
   actions.select = function (callback = null) {
     if (actions.selectCallback !== undefined) {
@@ -60,9 +76,19 @@ function query() {
     return actions;
   };
 
+  actions.orderBy = function (order) {
+    if (actions.orderByCallback !== undefined) {
+      throw new Error("Duplicate ORDERBY");
+    }
+
+    actions.orderByCallback = order;
+
+    return actions;
+  };
+
   actions.groupBy = function (...groups) {
     if (actions.groupByCallback !== undefined) {
-      throw new Error("Duplicate GROUP BY");
+      throw new Error("Duplicate GROUPBY");
     }
 
     actions.groupByCallback = groups;
@@ -81,6 +107,11 @@ function query() {
     // Execute groupBy =>
     if (actions.groupByCallback) {
       res = group(res, actions.groupByCallback);
+    }
+
+    // Execute orderBy =>
+    if (actions.orderByCallback) {
+      res = deepSort(res, actions.orderByCallback);
     }
 
     // Execute select =>
@@ -126,6 +157,20 @@ function group(array, callbacks) {
   return grouped;
 }
 
+function deepSort(array, callback) {
+  // do it readable
+  return array
+    .map((item) => {
+      if (Array.isArray(item[1])) {
+        item[1] = deepSort(item[1], callback);
+      } else if (item[1] && item[1].length) {
+        item[1] = item[1].sort((a, b) => callback(a[0], b[0]));
+      }
+      return item;
+    })
+    .sort((a, b) => callback(a[0], b[0]));
+}
+
 // console.log(
 //   query()
 //     .select(profession)
@@ -137,8 +182,21 @@ function group(array, callbacks) {
 //     .execute()
 // );
 
-const res = query().select().from(persons).groupBy(age).execute();
+const res = query()
+  .select(professionCount)
+  .from(persons)
+  .groupBy(profession)
+  .orderBy(naturalCompare)
+  .execute();
 console.log(JSON.stringify(res));
+console.log(
+  JSON.stringify([
+    ["politician", 1],
+    ["scientific", 3],
+    ["teacher", 3],
+  ]),
+  "expect"
+);
 
 // console.log(first)
 
