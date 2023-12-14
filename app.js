@@ -1,63 +1,3 @@
-var persons = [
-  { name: "Peter", profession: "teacher", age: 20, maritalStatus: "married" },
-  { name: "Michael", profession: "teacher", age: 50, maritalStatus: "single" },
-  { name: "Peter", profession: "teacher", age: 20, maritalStatus: "married" },
-  { name: "Anna", profession: "scientific", age: 20, maritalStatus: "married" },
-  { name: "Rose", profession: "scientific", age: 50, maritalStatus: "married" },
-  { name: "Anna", profession: "scientific", age: 20, maritalStatus: "single" },
-  { name: "Anna", profession: "politician", age: 50, maritalStatus: "married" },
-];
-
-var numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]; 
-function descendentCompare(number1, number2) {
-  return number2 - number1;
-}
-function profession(person) {
-  return person.profession;
-}
-function name(person) {
-  return person.name;
-}
-function age(person) {
-  return person.age;
-}
-function isTeacher(person) {
-  return person.profession === "teacher";
-}
-function isPeter(person) {
-  return person.name === "Peter";
-}
-function odd(group) {
-  return group[0] === 'odd';
-}
-function isEven(number) {
-  return number % 2 === 0;
-}
-function parity(number) {
-  return isEven(number) ? 'even' : 'odd';
-}
-function lessThan3(number) {
-  return number < 3;
-}
-function greaterThan4(number) {
-  return number > 4;
-}
-
-function naturalCompare(value1, value2) {
-  if (value1 < value2) {
-    return -1;
-  } else if (value1 > value2) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-function professionCount(group) {
-  console.log("enteredGROUP", group);
-  return [group[0], group[1].length];
-}
-
 function query() {
   const actions = {};
 
@@ -78,21 +18,19 @@ function query() {
     return actions;
   };
 
-  actions.from = function (objectsArray = null) {
+  actions.from = function (...objectsArrays) {
     if (actions.result !== undefined) {
       throw new Error("Duplicate FROM");
     }
 
-    actions.result = objectsArray;
+    actions.result = join(objectsArrays);
 
     return actions;
   };
 
   actions.where = function (...filters) {
     if (filters) {
-      console.log(filters);
-      actions.filterCallbackStack.push(...filters);
-      console.log(this.filterCallbackStack)
+      actions.filterCallbackStack.push(filters);
     }
 
     return actions;
@@ -118,24 +56,21 @@ function query() {
     return actions;
   };
 
-  actions.having = function(have) {
-    if(actions.havingCallback !== undefined) {
-      
+  actions.having = function (have) {
+    if (actions.havingCallback !== undefined) {
     }
 
     actions.havingCallback = have;
 
     return actions;
-  }
+  };
 
   actions.execute = function () {
     let res = actions.result || [];
 
     // Execute where =>
-    if(this.filterCallbackStack.length) {
-      res = res.filter((el) => {
-        return actions.filterCallbackStack.some((callback) => callback(el));
-      });
+    if (this.filterCallbackStack.length) {
+      res = res.filter((el) => filter(el, actions.filterCallbackStack));
     }
 
     // Execute groupBy =>
@@ -145,13 +80,13 @@ function query() {
 
     // Execute orderBy =>
     if (actions.orderByCallback) {
-      console.log('order')
+      console.log("order");
       res = deepSort(res, actions.orderByCallback);
     }
 
     // Execute having =>
-    if(actions.havingCallback) {
-      res = res.filter(el => actions.havingCallback(el))
+    if (actions.havingCallback) {
+      res = res.filter((el) => actions.havingCallback(el));
     }
 
     // Execute select =>
@@ -165,6 +100,23 @@ function query() {
   };
 
   return actions;
+}
+
+function join(arrays) {
+  if (arrays.length < 2) return arrays.flat();
+
+  const [firstArray, secondArray] = arrays;
+  const result = [];
+  for (let i = 0; i < firstArray.length; i++) {
+    const firstElement = firstArray[i];
+
+    for (let j = 0; j < secondArray.length; j++) {
+      const secondElement = secondArray[j];
+      result.push([firstElement, secondElement]);
+    }
+  }
+
+  return result;
 }
 
 function group(array, callbacks) {
@@ -209,52 +161,28 @@ function deepSort(array, callback) {
       return item;
     })
     .sort((a, b) => {
-      if(Array.isArray(a[0])) {
-        return callback(a[0], b[0])
+      if (Array.isArray(a[0])) {
+        return callback(a[0], b[0]);
       }
-      return callback(a,b);
+      return callback(a, b);
     });
 }
 
-// console.log(
-//   query()
-//     .select(profession)
-//     // .from()
-//     // .select(superName)
-//     .from(persons)
-//     .where(isTeacher)
-//     .where(isPeter)
-//     .execute()
-// );
+function filter(element, filters) {
+  let answer = true;
 
-const res = query().select().from(numbers).execute()
-console.log(res);
+  for (let i = 0; i < filters.length; i++) {
+    const callbacks = filters[i];
 
-// const res = query()
-//   .select(professionCount)
-//   .from(persons)
-//   .groupBy(profession)
-//   .orderBy(naturalCompare)
-//   .execute();
-// console.log(JSON.stringify(res));
-// console.log(
-//   JSON.stringify([
-//     ["politician", 1],
-//     ["scientific", 3],
-//     ["teacher", 3],
-//   ]),
-//   "expect"
-// );
+    if (answer && callbacks.length > 1) {
+      answer = callbacks.some((callback) => callback(element));
+      continue;
+    }
 
-// console.log(first)
+    answer = answer && callbacks[0](element);
+  }
 
-// console.log(query().select().select().execute()) // "Error('Duplicate SELECT')"
-// console.log(query().select().from([]).select().execute()) // "Error('Duplicate SELECT')"
-// console.log(query().select().from([]).from([]).execute()); //Error('Duplicate FROM');
-
-// const numbers = [1, 2, 3];
-// console.log(query().select().execute(), [])
-// console.log(query().from(numbers).execute(), [1, 2, 3])
-// console.log(query().execute(), [])
+  return answer;
+}
 
 module.exports = { query };
