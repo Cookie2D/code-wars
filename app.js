@@ -88,9 +88,11 @@ function query() {
     return actions;
   };
 
-  actions.where = function (filter = null) {
-    if (filter) {
-      actions.filterCallbackStack.push(filter);
+  actions.where = function (...filters) {
+    if (filters) {
+      console.log(filters);
+      actions.filterCallbackStack.push(...filters);
+      console.log(this.filterCallbackStack)
     }
 
     return actions;
@@ -130,9 +132,16 @@ function query() {
     let res = actions.result || [];
 
     // Execute where =>
-    res = res.filter((el) => {
-      return actions.filterCallbackStack.every((callback) => callback(el));
-    });
+    if(this.filterCallbackStack.length) {
+      res = res.filter((el) => {
+        console.log(el);
+        return actions.filterCallbackStack.some((callback) => {
+          console.log(callback)
+          console.log(callback(el));
+          return callback(el)
+        });
+      });
+    }
 
     // Execute groupBy =>
     if (actions.groupByCallback) {
@@ -223,7 +232,7 @@ function deepSort(array, callback) {
 //     .execute()
 // );
 
-const res = query().select().from(numbers).where(lessThan3, greaterThan4).execute()
+const res = query().select().from(numbers).execute()
 console.log(res);
 
 // const res = query()
