@@ -8,6 +8,10 @@ var persons = [
   { name: "Anna", profession: "politician", age: 50, maritalStatus: "married" },
 ];
 
+var numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]; 
+function descendentCompare(number1, number2) {
+  return number2 - number1;
+}
 function profession(person) {
   return person.profession;
 }
@@ -22,6 +26,21 @@ function isTeacher(person) {
 }
 function isPeter(person) {
   return person.name === "Peter";
+}
+function odd(group) {
+  return group[0] === 'odd';
+}
+function isEven(number) {
+  return number % 2 === 0;
+}
+function parity(number) {
+  return isEven(number) ? 'even' : 'odd';
+}
+function lessThan3(number) {
+  return number < 3;
+}
+function greaterThan4(number) {
+  return number > 4;
 }
 
 function naturalCompare(value1, value2) {
@@ -44,6 +63,7 @@ function query() {
 
   actions.filterCallbackStack = [];
   actions.selectCallback = undefined;
+  actions.havingCallback = undefined;
   actions.orderByCallback = undefined;
   actions.groupByCallback = undefined;
   actions.result = undefined;
@@ -96,6 +116,16 @@ function query() {
     return actions;
   };
 
+  actions.having = function(have) {
+    if(actions.havingCallback !== undefined) {
+      
+    }
+
+    actions.havingCallback = have;
+
+    return actions;
+  }
+
   actions.execute = function () {
     let res = actions.result || [];
 
@@ -111,7 +141,13 @@ function query() {
 
     // Execute orderBy =>
     if (actions.orderByCallback) {
+      console.log('order')
       res = deepSort(res, actions.orderByCallback);
+    }
+
+    // Execute having =>
+    if(actions.havingCallback) {
+      res = res.filter(el => actions.havingCallback(el))
     }
 
     // Execute select =>
@@ -160,7 +196,7 @@ function group(array, callbacks) {
 function deepSort(array, callback) {
   // do it readable
   return array
-    .map((item) => {
+    .map((item, i, array) => {
       if (Array.isArray(item[1])) {
         item[1] = deepSort(item[1], callback);
       } else if (item[1] && item[1].length) {
@@ -168,7 +204,12 @@ function deepSort(array, callback) {
       }
       return item;
     })
-    .sort((a, b) => callback(a[0], b[0]));
+    .sort((a, b) => {
+      if(Array.isArray(a[0])) {
+        return callback(a[0], b[0])
+      }
+      return callback(a,b);
+    });
 }
 
 // console.log(
@@ -182,21 +223,24 @@ function deepSort(array, callback) {
 //     .execute()
 // );
 
-const res = query()
-  .select(professionCount)
-  .from(persons)
-  .groupBy(profession)
-  .orderBy(naturalCompare)
-  .execute();
-console.log(JSON.stringify(res));
-console.log(
-  JSON.stringify([
-    ["politician", 1],
-    ["scientific", 3],
-    ["teacher", 3],
-  ]),
-  "expect"
-);
+const res = query().select().from(numbers).where(lessThan3, greaterThan4).execute()
+console.log(res);
+
+// const res = query()
+//   .select(professionCount)
+//   .from(persons)
+//   .groupBy(profession)
+//   .orderBy(naturalCompare)
+//   .execute();
+// console.log(JSON.stringify(res));
+// console.log(
+//   JSON.stringify([
+//     ["politician", 1],
+//     ["scientific", 3],
+//     ["teacher", 3],
+//   ]),
+//   "expect"
+// );
 
 // console.log(first)
 
