@@ -134,12 +134,7 @@ function query() {
     // Execute where =>
     if(this.filterCallbackStack.length) {
       res = res.filter((el) => {
-        console.log(el);
-        return actions.filterCallbackStack.some((callback) => {
-          console.log(callback)
-          console.log(callback(el));
-          return callback(el)
-        });
+        return actions.filterCallbackStack.some((callback) => callback(el));
       });
     }
 
