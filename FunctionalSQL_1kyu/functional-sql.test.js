@@ -1,6 +1,6 @@
 describe("SQL tests", function () {
   const { deepEqual, throws } = require("chai").assert;
-  const { query } = require("./app");
+  const { query } = require("./functional-sql");
 
   it("Basic SELECT tests", function () {
     var numbers = [1, 2, 3];
